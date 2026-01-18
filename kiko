@@ -1,0 +1,151 @@
+index.html<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Formiga Durín</title>
+  <style>
+    body {
+      margin: 0;
+      background: #b00000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      color: #fff;
+      touch-action: none;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 16px;
+    }
+    canvas {
+      background: #b00000;
+      border: 3px solid #fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">
+    Pontos: <span id="score">0</span> | Fase: <span id="level">1</span>
+  </div>
+  <canvas id="game" width="360" height="360"></canvas>  <div id="controls" style="margin-top:10px;">
+    <button onclick="setDir(0,-1)">⬆️</button><br>
+    <button onclick="setDir(-1,0)">⬅️</button>
+    <button onclick="setDir(1,0)">➡️</button><br>
+    <button onclick="setDir(0,1)">⬇️</button>
+  </div>  <div id="overlay" style="position:absolute;inset:0;background:rgba(176,0,0,0.95);display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;">
+    <h1>Desafio Durín</h1>
+    <p>Controle a formiga e colete os produtos Durín</p>
+    <button onclick="startGame()" style="padding:10px 20px;font-size:16px;">Iniciar Jogo</button>
+  </div>  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const grid = 20;
+    let score = 0;
+    let started = false;
+    let level = 1;
+    let speed = 200;
+
+    let ant = [{ x: 240, y: 240 }];
+    let dx = grid;
+    let dy = 0;
+
+    let item = randomPosition();
+    let bonus = null;
+
+    function randomPosition() {
+      return {
+        x: Math.floor(Math.random() * (canvas.width / grid)) * grid,
+        y: Math.floor(Math.random() * (canvas.height / grid)) * grid,
+      };
+    }
+
+    function setDir(x,y){
+      if(x !== -dx/grid && y !== -dy/grid){
+        dx = x * grid;
+        dy = y * grid;
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp") setDir(0,-1);
+      if (e.key === "ArrowDown") setDir(0,1);
+      if (e.key === "ArrowLeft") setDir(-1,0);
+      if (e.key === "ArrowRight") setDir(1,0);
+    });
+
+    function drawAnt() {
+      ant.forEach((segment, index) => {
+        ctx.fillStyle = index === 0 ? "#ffffff" : "#dddddd";
+        ctx.fillRect(segment.x, segment.y, grid, grid);
+      });
+    });
+    }
+
+    function drawItem() {
+      ctx.fillStyle = "#f5f5f5";
+      ctx.fillRect(item.x, item.y, grid, grid);
+    }
+
+    function drawBonus() {
+      if (bonus) {
+        ctx.fillStyle = "#ffcc00";
+        ctx.fillRect(bonus.x, bonus.y, grid, grid);
+        ctx.fillStyle = "#000";
+        ctx.fillText("DURÍN", bonus.x + 2, bonus.y + 14);
+      }
+    }
+    }
+
+    function update() {
+      const head = { x: ant[0].x + dx, y: ant[0].y + dy };
+
+      if (
+        head.x < 0 || head.y < 0 ||
+        head.x >= canvas.width || head.y >= canvas.height
+      ) {
+        resetGame();
+        return;
+      }
+
+      ant.unshift(head);
+
+      if (head.x === item.x && head.y === item.y) {
+        score += 10;
+        item = randomPosition();
+        checkLevel();
+      } else if (bonus && head.x === bonus.x && head.y === bonus.y) {
+        score += 50;
+        bonus = null;
+        checkLevel();
+      } else {
+        ant.pop();
+      }
+    }
+
+    function checkLevel() {
+      const newLevel = Math.floor(score / 100) + 1;
+      if (newLevel !== level && newLevel <= 10) {
+        level = newLevel;
+        speed = Math.max(60, speed - 15);
+
+        if ([3, 6, 9].includes(level)) {
+          bonus = randomPosition();
+        }
+      }
+      document.getElementById("score").innerText = score;
+      document.getElementById("level").innerText = level;
+    }
+
+    function resetGame() {
+      score = 0;
+      level = 1;
+      speed = 200;
+      ant = [{ x: 240, y: 240 }];
+      dx = grid;
+      dy =
